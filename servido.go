@@ -39,7 +39,9 @@ func handleTorrent(res http.ResponseWriter, req *http.Request) {
   vars := mux.Vars(req)
   Key := vars["Key"]
   log.Println("Request for:", Key)
+
   switch req.Method {
+
     case "GET":
       torrent, ok := torrents[Key]
       if !ok {
@@ -54,15 +56,76 @@ func handleTorrent(res http.ResponseWriter, req *http.Request) {
         return
       }
       fmt.Fprint(res, string(outgoingJSON))
+
     case "DELETE":
       delete(torrents, Key)
       res.WriteHeader(http.StatusNoContent)
-  }
+
+    case "POST":
+      torrent := new(Torrent)
+      decoder := json.NewDecoder(req.Body)
+      error := decoder.Decode(&torrent)
+      if error != nil {
+        log.Println(error.Error())
+        http.Error(res, error.Error(), http.StatusInternalServerError)
+        return
+      }
+      torrents[Key] = torrent
+      outgoingJSON, err := json.Marshal(torrent)
+      if err != nil {
+        log.Println(error.Error())
+        http.Error(res, err.Error(), http.StatusInternalServerError)
+        return
+      }
+      res.WriteHeader(http.StatusCreated)
+      fmt.Fprint(res, string(outgoingJSON))
+
+    case "PUT":
+      torrent, ok := torrents[Key]
+      if !ok {
+        res.WriteHeader(http.StatusNotFound)
+        fmt.Fprint(res, string("Torrent not found"))
+        return
+      }
+      update := new(Torrent)
+      decoder := json.NewDecoder(req.Body)
+      error := decoder.Decode(&update)
+      if error != nil {
+        log.Println(error.Error())
+        http.Error(res, error.Error(), http.StatusInternalServerError)
+        return
+      }
+      if update.Title != "" {
+        torrent.Title = update.Title
+      }
+      if update.Description != "" {
+        torrent.Description = update.Description
+      }
+      if update.MagnetLink != "" {
+        torrent.MagnetLink = update.MagnetLink
+      }
+      if update.Size != "" {
+        torrent.Size = update.Size
+      }
+
+      //Tem que ver se é zero mesmo o valor caso nao venha nada
+      if update.Downloads != 0 {
+        torrent.Downloads = update.Downloads
+      }
+      fmt.Printf("download:%d",update.Downloads)
+      if update.Seeders != 0 {
+        torrent.Seeders = update.Seeders
+      }
+      if update.Leechers != 0 {
+        torrent.Leechers = update.Leechers
+      }
+      res.WriteHeader(http.StatusNoContent)
+    }
 }
 
 func main () {
   router := mux.NewRouter().StrictSlash(true)
   router.HandleFunc("/torrents", handleTorrents).Methods("GET")
-  router.HandleFunc("/torrent/{Key}", handleTorrent).Methods("GET", "DELETE") //Sei la que Key seria (magnetlink talvez?), qualquer coisa tirar essa linha
+  router.HandleFunc("/torrent/{Key}", handleTorrent).Methods("GET", "DELETE","POST","PUT") //Sei la que Key seria (magnetlink talvez?), qualquer coisa tirar essa linha
   log.Fatal(http.ListenAndServe("localhost:8080", router))
 }
