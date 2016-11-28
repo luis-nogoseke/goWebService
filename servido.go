@@ -1,12 +1,13 @@
 package main
 import (
-    "fmt"
-    "log"
-    "net/http"
-    "gorilla/mux"
+  "encoding/json"
+  "fmt"
+  "log"
+  "net/http"
+  "gorilla/mux"
 )
 
-type Torrents struct {
+type Torrent struct {
   Title string
   Description string
   MagnetLink string
@@ -16,24 +17,14 @@ type Torrents struct {
   Leechers int
 }
 
-/*var movies = map[string]*Movie{
-  "tt0246578": &Movie{Title: "Donnie Darko",
-  Rating: 8.1, Year: 2001},
-  "tt0080120": &Movie{Title: "The Warriors",
-  Rating: 7.7, Year: 1979},
-  "tt0074486": &Movie{Title: "Eraserhead",
-  Rating: 7.4, Year: 1977},
-}*/
-
 var torrents = map[string]*Torrent{
-
+  "1": &Torrent{Title: "Filme1",Description:"Teste",MagnetLink:"1",Size:"1.2GB",Downloads:20,Seeders:1,Leechers:0},
 }
-
 
 //Não mexi em nada nessas funções handle ainda
 func handleTorrents(res http.ResponseWriter, req *http.Request) {
   res.Header().Set("Content-Type", "application/json")
-  outgoingJSON, error := json.Marshal(movies)
+  outgoingJSON, error := json.Marshal(torrents)
   if error != nil {
     log.Println(error.Error())
     http.Error(res, error.Error(),
@@ -46,26 +37,32 @@ func handleTorrents(res http.ResponseWriter, req *http.Request) {
 func handleTorrent(res http.ResponseWriter, req *http.Request) {
   res.Header().Set("Content-Type", "application/json")
   vars := mux.Vars(req)
-  imdbKey := vars["imdbKey"]
-  log.Println("Request for:", imdbKey)
-  movie, ok := movies[imdbKey]
-  if !ok {
-    res.WriteHeader(http.StatusNotFound)
-    fmt.Fprint(res, string("Movie not found"))
-    return
+  Key := vars["Key"]
+  log.Println("Request for:", Key)
+  switch req.Method {
+    case "GET":
+      torrent, ok := torrents[Key]
+      if !ok {
+        res.WriteHeader(http.StatusNotFound)
+        fmt.Fprint(res, string("Torrent not found"))
+        return
+      }
+      outgoingJSON, error := json.Marshal(torrent)
+      if error != nil {
+        log.Println(error.Error())
+        http.Error(res, error.Error(), http.StatusInternalServerError)
+        return
+      }
+      fmt.Fprint(res, string(outgoingJSON))
+    case "DELETE":
+      delete(torrents, Key)
+      res.WriteHeader(http.StatusNoContent)
   }
-  outgoingJSON, error := json.Marshal(movie)
-  if error != nil {
-    log.Println(error.Error())
-    http.Error(res, error.Error(), http.StatusInternalServerError)
-    return
-  }
-  fmt.Fprint(res, string(outgoingJSON))
 }
 
 func main () {
   router := mux.NewRouter().StrictSlash(true)
   router.HandleFunc("/torrents", handleTorrents).Methods("GET")
-  router.HandleFunc("/torrent/{Key}", handleTorrent).Methods("GET") //Sei la que Key seria (magnetlink talvez?), qualquer coisa tirar essa linha
-  handleMovie).Methods("GET")  log.Fatal(http.ListenAndServe("localhost:8080", router))
+  router.HandleFunc("/torrent/{Key}", handleTorrent).Methods("GET", "DELETE") //Sei la que Key seria (magnetlink talvez?), qualquer coisa tirar essa linha
+  log.Fatal(http.ListenAndServe("localhost:8080", router))
 }
