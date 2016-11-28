@@ -100,17 +100,25 @@ func daysAgo (t time.Time) int {
 }
 
 func main () {
-  fmt.Println("Rodando")
+  fmt.Println("Buscando...\n")
   result, err := SearchIssues(os.Args[1:])
   if err != nil {
     log.Fatal(err)
   }
-  fmt.Printf("%d issues:\n", result.N_results)
-  fmt.Println(result.Status)
-  fmt.Println(result.Copyrigth)
-  fmt.Println(result.Last)
+  fmt.Println("Resultado: ",result.Status)
+  fmt.Println("Ùltima atualização: ",result.Last)
+  fmt.Printf("%d itens: \n\n", result.N_results)
+
   for _, item := range result.Results {
-    fmt.Println(item.Name)
-    fmt.Println(item.Details[0].Title)
+    fmt.Println("Posição: ", item.Rank)
+    fmt.Println("Semanas na lista: ", item.Weeks)
+    fmt.Println("Título: ", item.Details[0].Title)
+    fmt.Println("Autor: ", item.Details[0].Author)
+    fmt.Println("Data de Publicação ", item.Pdate)
+    fmt.Println("Editora: ",item.Details[0].Publisher)
+    fmt.Println("Descrição: ", item.Details[0].Description)
+    fmt.Println("")
   }
+
+  fmt.Println(result.Copyrigth)
 }
