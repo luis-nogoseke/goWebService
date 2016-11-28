@@ -107,12 +107,9 @@ func handleTorrent(res http.ResponseWriter, req *http.Request) {
       if update.Size != "" {
         torrent.Size = update.Size
       }
-
-      //Tem que ver se é zero mesmo o valor caso nao venha nada
       if update.Downloads != 0 {
         torrent.Downloads = update.Downloads
       }
-      fmt.Printf("download:%d",update.Downloads)
       if update.Seeders != 0 {
         torrent.Seeders = update.Seeders
       }
