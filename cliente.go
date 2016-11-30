@@ -122,7 +122,32 @@ func post() {
 }
 
 func put() {
-    fmt.Println("Não Implementado!")
+    var putT Torrent
+
+    fmt.Println("Torrent para atualizar:")
+    aux, _ := in.ReadString('\n')
+    key := strings.TrimSuffix(aux, "\n")
+    fmt.Println("Nova descrição:")
+    aux, _ = in.ReadString('\n')
+    putT.Description = strings.TrimSuffix(aux, "\n")
+    putJSON, _ := json.Marshal(putT)
+
+    req, err := http.NewRequest("PUT", serverURL+"torrent/"+key, bytes.NewBuffer(putJSON))
+    if err != nil {
+        return
+    }
+    resp, err := http.DefaultClient.Do(req)
+
+    if err != nil {
+        log.Fatalf("could not fetch: %v", err)
+    }
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+        fmt.Println("Torrent não encontrado.")
+        return
+    }
 }
 
 func delete(key string) {
@@ -153,7 +178,7 @@ func main () {
         fmt.Println("2 - Procurar torrent por nome")
         fmt.Println("3 - Post torrent")
         fmt.Println("4 - Delete torrent")
-        fmt.Println("5 - Atualizar torrent")
+        fmt.Println("5 - Atualizar descrição do torrent")
         fmt.Println("6 - Sair")
         fmt.Scanf("%c\n", &op)
         switch op {
