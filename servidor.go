@@ -5,6 +5,7 @@ import (
   "log"
   "net/http"
   "gorilla/mux"
+  "strings"
 )
 
 type Torrent struct {
@@ -18,10 +19,11 @@ type Torrent struct {
 }
 
 var torrents = map[string]*Torrent{
-  "1": &Torrent{Title: "Filme1",Description:"Teste",MagnetLink:"1",Size:"1.2GB",Downloads:20,Seeders:1,Leechers:0},
+  "Filme1": &Torrent{Title: "Filme1",Description:"Teste",MagnetLink:"1",Size:"1.2GB",Downloads:20,Seeders:1,Leechers:0},
+  "Filme2": &Torrent{Title: "Filme2",Description:"Filme muito legal.",MagnetLink:"1245464",Size:"500MB",Downloads:300,Seeders:13,Leechers:2},
+  "Jogo1": &Torrent{Title: "Jogo1",Description:"Um jogo de ação.",MagnetLink:"767834",Size:"5GB",Downloads:20,Seeders:78,Leechers:91},
 }
 
-//Não mexi em nada nessas funções handle ainda
 func handleTorrents(res http.ResponseWriter, req *http.Request) {
   res.Header().Set("Content-Type", "application/json")
   outgoingJSON, error := json.Marshal(torrents)
@@ -37,11 +39,10 @@ func handleTorrents(res http.ResponseWriter, req *http.Request) {
 func handleTorrent(res http.ResponseWriter, req *http.Request) {
   res.Header().Set("Content-Type", "application/json")
   vars := mux.Vars(req)
-  Key := vars["Key"]
+  Key := strings.TrimSuffix(vars["Key"], "\n")
   log.Println("Request for:", Key)
 
   switch req.Method {
-
     case "GET":
       torrent, ok := torrents[Key]
       if !ok {
@@ -56,16 +57,22 @@ func handleTorrent(res http.ResponseWriter, req *http.Request) {
         return
       }
       fmt.Fprint(res, string(outgoingJSON))
-
+      break
     case "DELETE":
-      delete(torrents, Key)
+      _, ok := torrents[Key]
+      if ok {
+        delete(torrents, Key)
+        res.WriteHeader(http.StatusOK)
+        break
+      }
       res.WriteHeader(http.StatusNoContent)
-
+      break
     case "POST":
       torrent := new(Torrent)
       decoder := json.NewDecoder(req.Body)
       error := decoder.Decode(&torrent)
       if error != nil {
+        fmt.Println(error.Error())
         log.Println(error.Error())
         http.Error(res, error.Error(), http.StatusInternalServerError)
         return
@@ -123,6 +130,6 @@ func handleTorrent(res http.ResponseWriter, req *http.Request) {
 func main () {
   router := mux.NewRouter().StrictSlash(true)
   router.HandleFunc("/torrents", handleTorrents).Methods("GET")
-  router.HandleFunc("/torrent/{Key}", handleTorrent).Methods("GET", "DELETE","POST","PUT") //Sei la que Key seria (magnetlink talvez?), qualquer coisa tirar essa linha
+  router.HandleFunc("/torrent/{Key}", handleTorrent).Methods("GET", "DELETE","POST","PUT")
   log.Fatal(http.ListenAndServe("localhost:8080", router))
 }

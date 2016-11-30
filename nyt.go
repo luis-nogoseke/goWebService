@@ -10,18 +10,18 @@ import (
   "time"
 )
 
-const IssuesURL = "https://api.nytimes.com/svc/books/v3/lists.json"
+const apiURL = "https://api.nytimes.com/svc/books/v3/lists.json"
 
 
-type IssuesSearchResult struct {
+type BooksSearchResult struct {
   Status string `json:"status"`
   Copyrigth string `json:"copyright"`
   N_results int `json:"num_results"`
   Last string `json:"last_modified"`
-  Results []*Issue
+  Results []*Book
 }
 
-type Issue struct {
+type Book struct {
   List string `json:"list_name"`
   Name string `json:"display_name"`
   Date string `json:"bestsellers_date"`
@@ -68,9 +68,9 @@ type User struct {
   HTMLURL string `json:"html_url"`
 }
 
-func SearchIssues (terms []string) (*IssuesSearchResult, error) {
+func SearchBooks (terms []string) (*BooksSearchResult, error) {
   q := url.QueryEscape(strings.Join(terms, " "))
-  req, err := http.NewRequest("GET", IssuesURL+"?api-key=054670dd36264476b6456e1b8e24c7d1&list="+q, nil)
+  req, err := http.NewRequest("GET", apiURL+"?api-key=054670dd36264476b6456e1b8e24c7d1&list="+q, nil)
 
   if err != nil {
     return nil, err
@@ -87,7 +87,7 @@ func SearchIssues (terms []string) (*IssuesSearchResult, error) {
     return nil, fmt.Errorf("search query failed: %s", resp.Status)
   }
 
-  var result IssuesSearchResult
+  var result BooksSearchResult
   if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
     return nil, err
   }
@@ -100,8 +100,18 @@ func daysAgo (t time.Time) int {
 }
 
 func main () {
+  if len(os.Args) < 2 {
+    fmt.Println("USAGE: go run nyt.go name-of-the-list")
+    fmt.Println("Examples:")
+    fmt.Println("go nyt.go hardcover-fiction")
+    fmt.Println("go nyt.go hardcover-nonfiction")
+    fmt.Println("go nyt.go humor")
+    fmt.Println("go nyt.go education")
+    os.Exit(1)
+  }
+
   fmt.Println("Buscando...\n")
-  result, err := SearchIssues(os.Args[1:])
+  result, err := SearchBooks(os.Args[1:])
   if err != nil {
     log.Fatal(err)
   }
